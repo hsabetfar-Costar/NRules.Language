@@ -22,18 +22,44 @@ namespace NRules.RuleSharp
 
         public Type FindType(string typeName)
         {
-            Type type = Type.GetType(typeName);
-            if (type != null) return type;
+            var typeNameTemp = typeName;
+            bool isNullable = false;
+            Type generatedType = null;
 
-            foreach (var assembly in _references)
+            if (typeNameTemp.EndsWith("?"))
             {
-                type = assembly.GetType(typeName);
-                if (type != null)
+                int idx = typeName.LastIndexOf('?');
+
+                typeNameTemp = typeName.Substring(0, idx);
+                isNullable = true;
+            }
+
+            Type type = Type.GetType(typeNameTemp);
+            if (type != null)
+            {
+                generatedType = type;
+            }
+
+            if (generatedType == null)
+            {
+                foreach (var assembly in _references)
                 {
-                    return type;
+                    type = assembly.GetType(typeNameTemp);
+                    if (type != null)
+                    {
+                        generatedType = type;
+                        break;
+                    }
                 }
             }
-            return null;
+
+            if (isNullable && t != null)
+            {
+                Type nullableType = generatedType;
+                generatedType=  nullableType.GetNullabeType(); 
+            }
+
+            return generatedType;
         }
         
         public void AddReferences(IEnumerable<Assembly> assemblies)
